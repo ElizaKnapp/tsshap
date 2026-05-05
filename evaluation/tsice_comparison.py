@@ -3,12 +3,18 @@ TSICE comparison utilities.
 
 TSICE (Time Series Individual Conditional Expectation) computes ICE curves
 for time series forecasts to show how changing the value at each time step
-affects the forecast.  This module wraps the `tsicebox` library and provides
-utilities to align TSICE feature rankings with TsSHAP importances.
+affects the forecast. When ``tsicebox`` is installed, :func:`run_tsice`
+delegates to it; otherwise it uses a manual ICE loop that preserves the
+original series index—important for forecasters that require a ``DatetimeIndex``
+(e.g. Prophet).
+
+Native ``tsicebox`` integration builds interim ``pandas.Series`` from plain
+arrays (no DatetimeIndex), so Prophet-like models may need the fallback path
+unless the predictor is patched to attach ``y.index``.
 
 Reference: tsicebox — https://github.com/davide-burba/tsicebox
 
-Installation: pip install tsicebox
+Installation: pip install tsicebox (optional)
 """
 
 from __future__ import annotations
@@ -55,6 +61,13 @@ def run_tsice(
     dict[str, float]
         Mapping from lag label (e.g. "y(t-1)") to mean absolute ICE
         importance.
+
+    Notes
+    -----
+    With ``tsicebox`` loaded, intermediate fits use ``Series(values)`` without
+    propagating ``y.index``. Forecasters that require a DatetimeIndex (Prophet)
+    are more reliable under the ImportError fallback (manual ICE), which passes
+    ``index=y.index`` on every perturbation replicate.
     """
     try:
         from tsicebox import TSICE
@@ -179,29 +192,6 @@ def align_importances(
             df[col] = df[col] / col_max
 
     return df.sort_values("tsshap", ascending=False)
-
-
-def compare_rankings(
-    tsshap_importance: pd.Series,
-    tsice_importance: dict[str, float],
-) -> dict[str, float]:
-    """
-    Compute Spearman rank correlation between TsSHAP and TSICE importances.
-
-    Returns
-    -------
-    dict with keys "spearman_rho" and "n_common_features".
-    """
-    df = align_importances(tsshap_importance, tsice_importance)
-    if len(df) < 2:
-        return {"spearman_rho": float("nan"), "n_common_features": len(df)}
-    rho, pval = spearmanr(df["tsshap"], df["tsice"])
-    return {
-        "spearman_rho": float(rho),
-        "p_value": float(pval),
-        "n_common_features": len(df),
-    }
-
 
 def plot_comparison(
     tsshap_importance: pd.Series,

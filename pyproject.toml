@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "tsshap-timeseries"
 version = "0.1.0"
-description = "Feature-based TsSHAP-style explainability for univariate time series forecasting (surrogate + TreeSHAP)."
+description = "TsSHAP-style feature-based explainability for univariate forecasting: backtesting, interpretable features, tree surrogate (sklearn/XGBoost/LightGBM/CatBoost), SHAP, notebook-driven TSICE comparison."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"

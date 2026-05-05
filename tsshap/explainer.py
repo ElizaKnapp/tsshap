@@ -40,7 +40,8 @@ class TsSHAPExplainer:
     Implements the three-stage pipeline from the TsSHAP paper:
         1. Generate backtested forecasts from the black-box forecaster.
         2. Extract interpretable features from the original series.
-        3. Train an XGBoost surrogate and compute TreeSHAP values.
+        3. Fit a tree-ensemble surrogate on (features, black-box forecasts) and
+           compute TreeSHAP attributions via the ``shap`` library.
 
     Parameters
     ----------
@@ -52,7 +53,9 @@ class TsSHAPExplainer:
     horizon : int
         Forecast horizon H.  Defaults to 10% of the training series length.
     surrogate_backend : SurrogateBackend
-        Tree library used for the surrogate ("xgboost", "lightgbm", "catboost").
+        Tree library for the surrogate (``xgboost``, ``lightgbm``,
+        ``catboost``, or ``sklearn``).  If omitted, a working backend is
+        selected automatically (``sklearn`` when tree libraries are unavailable).
     surrogate_params : dict or None
         Additional parameters forwarded to the surrogate model constructor.
     min_train_size : int or None

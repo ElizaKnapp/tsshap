@@ -1,3 +1,5 @@
+# Full local stack for course notebooks (all surrogate backends + Prophet + viz).
+# Core package install: pip install -e .  or  pip install tsshap-timeseries
 xgboost>=2.0
 shap>=0.44
 statsmodels>=0.14

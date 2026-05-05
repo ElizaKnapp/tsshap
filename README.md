@@ -22,12 +22,12 @@ final_project/
 │   │   ├── statistical.py     # ExponentialSmoothing (statsmodels)
 │   │   └── ml.py              # XGBoost, Prophet
 │   ├── backtesting.py         # Expanding window backtesting
-│   ├── surrogate.py           # Tree surrogate model (XGBoost/LightGBM/CatBoost)
+│   ├── surrogate.py           # Tree surrogate (XGBoost / LightGBM / CatBoost / sklearn GB)
 │   ├── explainer.py           # TsSHAPExplainer (main API)
 │   └── explanations.py        # Plotting: importance, PDP, SDP, SHAP summary
 ├── evaluation/
 │   ├── synthetic_data.py      # Synthetic time series generators
-│   ├── metrics.py             # Faithfulness, sensitivity, complexity, surrogate accuracy
+│   ├── metrics.py             # surrogate_accuracy (MAPE vs black-box forecasts)
 │   └── tsice_comparison.py    # TSICE wrapper + TsSHAP vs TSICE comparison
 ├── notebooks/
 │   ├── 01_features_demo.ipynb          # Feature extraction showcase
@@ -102,7 +102,7 @@ TsSHAP works in three stages:
 ```
 1. Backtesting      black-box forecaster  →  backtested forecast series
 2. Feature extraction  original series    →  interpretable feature matrix X
-3. Surrogate + SHAP    XGBoost on (X, backtested forecasts)  →  SHAP values
+3. Surrogate + SHAP    Tree ensemble on (X, backtested forecasts)  →  SHAP values
 ```
 
 **Feature families (in order of complexity):**
@@ -122,10 +122,19 @@ TsSHAP works in three stages:
 - **Semi-local** — mean |SHAP| over a time interval
 - **Global** — mean |SHAP| over the entire series
 
-**Evaluation metrics:**
-- **Faithfulness** — correlation between prediction change and SHAP change under perturbation
-- **Sensitivity** — Euclidean distance between explanations on perturbed inputs
-- **Complexity** — entropy of fractional feature importance distribution
+**Bundled black-box forecasters (`tsshap.forecasters`):**
+
+| Class | Notes |
+|---|---|
+| `NaiveForecaster` | Repeat last value |
+| `SeasonalNaiveForecaster` | Repeat value from one seasonal period ago |
+| `MovingAverageForecaster` | Mean of trailing window |
+| `ExponentialSmoothingForecaster` | Simple exponential smoothing (statsmodels) |
+| `XGBoostForecaster` | Recursive lag regression; optional deps / OpenMP on some platforms |
+| `ProphetForecaster` | Prophet model; **`DatetimeIndex` required on `y`** |
+
+**Evaluation (`evaluation/metrics.py`):**
+- **`surrogate_accuracy`** — MAPE between surrogate predictions and black-box backtested forecasts (how well the surrogate mimics the forecaster outputs).
 
 ---
 
@@ -133,6 +142,8 @@ TsSHAP works in three stages:
 
 | Notebook | Content |
 |---|---|
-| `01_features_demo.ipynb` | Visualise each feature family on the CO2 dataset |
-| `02_synthetic_evaluation.ipynb` | End-to-end TsSHAP + correctness validation against ground truth |
-| `03_tsice_comparison.ipynb` | TsSHAP vs TSICE rank correlation and visual comparison |
+| `01_features_demo.ipynb` | Visualise **every** feature family on the CO₂ series (STL, lag, seasonal lag, rolling / expanding windows, trend, calendar). |
+| `02_synthetic_evaluation.ipynb` | Six experiments: baseline TsSHAP, local / semi-local scopes, **surrogate fidelity across all six forecasters** (MAPE table + two-panel plots with **forecaster suptitles**), STL vs ground-truth variance shares, efficiency (surrogate backends + TreeSHAP vs KernelSHAP). |
+| `03_tsice_comparison.ipynb` | TsSHAP vs TSICE on synthetic data: Spearman correlation, side-by-side bars (with **forecaster suptitle** on the Naive walkthrough), then the same comparison **looped over all six forecasters**. |
+
+**Environment tip:** XGBoost and Prophet need working installs (see `requirements.txt` or `pip install -e ".[all]"`). If `tsicebox` is installed, TSICE’s native path builds `Series` without the original time index; forecasters that require a **`DatetimeIndex`** (e.g. Prophet) are safer with the library’s **manual ICE fallback** (triggered when `tsicebox` is not importable) or after aligning that behavior in code.

@@ -1,8 +1,10 @@
 """
 Surrogate model for TsSHAP.
 
-The surrogate is a tree-ensemble regressor (XGBoost by default) that learns a
-mapping from the interpretable feature space to the backtested forecast values.
+The surrogate is a tree-ensemble regressor (XGBoost, LightGBM, CatBoost,
+or sklearn ``GradientBoostingRegressor``, chosen automatically when no backend
+is set) that learns a mapping from the interpretable feature space to the
+backtested forecast values.
 After fitting, TreeSHAP is applied via the `shap` library to obtain SHAP values
 for each feature at every time step.
 """
