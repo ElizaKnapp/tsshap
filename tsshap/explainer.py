@@ -14,7 +14,8 @@ Usage example
 ... )
 >>> explainer.fit(y_train)
 >>> result = explainer.explain(scope="global")
->>> result.plot_importance()
+>>> from tsshap.explanations import plot_importance
+>>> plot_importance(result)
 """
 
 from __future__ import annotations
@@ -333,9 +334,3 @@ class ExplanationResult:
         """Return the top-n most important features sorted by importance."""
         return self.feature_importance.abs().sort_values(ascending=False).head(n)
 
-    def __repr__(self) -> str:
-        return (
-            f"ExplanationResult(scope={self.scope!r}, "
-            f"n_features={len(self.feature_names)}, "
-            f"n_timesteps={len(self.index)})"
-        )
